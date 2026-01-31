@@ -10,6 +10,7 @@ import { runAdd, parseAddOptions, initTelemetry } from './add.ts';
 import { runFind } from './find.ts';
 import { runList } from './list.ts';
 import { removeCommand, parseRemoveOptions } from './remove.ts';
+import { runCopy, parseCopyOptions } from './copy.ts';
 import { track } from './telemetry.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -83,6 +84,9 @@ function showBanner(): void {
     `  ${DIM}$${RESET} ${TEXT}npx skills remove${RESET}          ${DIM}Remove installed skills${RESET}`
   );
   console.log(
+    `  ${DIM}$${RESET} ${TEXT}npx skills copy ${DIM}<src> <dst>${RESET} ${DIM}Copy skills between projects${RESET}`
+  );
+  console.log(
     `  ${DIM}$${RESET} ${TEXT}npx skills init ${DIM}[name]${RESET}     ${DIM}Create a new skill${RESET}`
   );
   console.log();
@@ -101,6 +105,7 @@ ${BOLD}Commands:${RESET}
                     e.g. vercel-labs/agent-skills
                          https://github.com/vercel-labs/agent-skills
   remove [skills]   Remove installed skills
+  copy <src> <dst>  Copy skills from source project to target project
   list, ls          List installed skills
   find [query]      Search for skills interactively
   init [name]       Initialize a skill (creates <name>/SKILL.md or ./SKILL.md)
@@ -122,7 +127,12 @@ ${BOLD}Remove Options:${RESET}
   -s, --skill <skills>   Specify skills to remove (use '*' for all skills)
   -y, --yes              Skip confirmation prompts
   --all                  Shorthand for --skill '*' --agent '*' -y
-  
+
+${BOLD}Copy Options:${RESET}
+  -s, --skill <skills>   Copy specific skills only
+  --force                Overwrite existing skills in target
+  -y, --yes              Skip confirmation prompts
+
 ${BOLD}List Options:${RESET}
   -g, --global           List global skills (default: project)
   -a, --agent <agents>   Filter by specific agents
@@ -139,6 +149,8 @@ ${BOLD}Examples:${RESET}
   ${DIM}$${RESET} skills remove                   ${DIM}# interactive remove${RESET}
   ${DIM}$${RESET} skills remove web-design        ${DIM}# remove by name${RESET}
   ${DIM}$${RESET} skills rm --global frontend-design
+  ${DIM}$${RESET} skills copy ~/project-a ~/project-b
+  ${DIM}$${RESET} skills copy ./source ./target --skill web-design
   ${DIM}$${RESET} skills list                     ${DIM}# list all installed skills${RESET}
   ${DIM}$${RESET} skills ls -g                    ${DIM}# list global skills only${RESET}
   ${DIM}$${RESET} skills ls -a claude-code        ${DIM}# filter by agent${RESET}
@@ -588,6 +600,22 @@ async function main(): Promise<void> {
     case 'list':
     case 'ls':
       await runList(restArgs);
+      break;
+    case 'copy':
+    case 'cp':
+      await runCopy(restArgs);
+      // Track after successful copy
+      try {
+        const copyOptions = parseCopyOptions(restArgs);
+        track({
+          event: 'copy',
+          source: 'cli',
+          skills: copyOptions.skill?.join(',') || '',
+          agents: '',
+        });
+      } catch {
+        // Ignore telemetry errors
+      }
       break;
     case 'check':
       runCheck(restArgs);

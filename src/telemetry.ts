@@ -45,12 +45,20 @@ interface FindTelemetryData {
   interactive?: '1';
 }
 
+interface CopyTelemetryData {
+  event: 'copy';
+  source: string;
+  skills: string;
+  agents: string;
+}
+
 type TelemetryData =
   | InstallTelemetryData
   | RemoveTelemetryData
   | CheckTelemetryData
   | UpdateTelemetryData
-  | FindTelemetryData;
+  | FindTelemetryData
+  | CopyTelemetryData;
 
 let cliVersion: string | null = null;
 
